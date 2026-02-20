@@ -1,0 +1,42 @@
+import os
+import yt_dlp
+from aiogram import Bot, Dispatcher, types
+from aiogram.filters import CommandStart
+from aiogram.types import FSInputFile
+
+TOKEN = os.getenv("BOT_TOKEN")
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher()
+
+@dp.message(CommandStart())
+async def start(message: types.Message):
+    await message.answer("السلام عليكم ورحمة الله وبركاته 👋🏻 ارسل رابط الموقع ليتم تنزيله")
+
+def download(url):
+    ydl_opts = {
+        'format': 'mp4/best',
+        'merge_output_format': 'mp4',
+        'outtmpl': 'video.%(ext)s',
+        'noplaylist': True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        return ydl.prepare_filename(info)
+
+@dp.message()
+async def handle(message: types.Message):
+    wait = await message.answer("⏳")
+    try:
+        file = download(message.text.strip())
+        await wait.delete()
+        await message.answer_video(FSInputFile(file))
+        os.remove(file)
+    except:
+        await wait.delete()
+        await message.answer("الرابط هذا ما رضي يتحمل")
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(dp.start_polling(bot))
